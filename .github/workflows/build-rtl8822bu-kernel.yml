@@ -1,0 +1,83 @@
+name: Build Apollo RTL8822BU kernel
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout kernel source
+        uses: actions/checkout@v4
+        with:
+          ref: staging
+          path: kernel
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bc bison flex libssl-dev libelf-dev \
+            build-essential python3 python-is-python3 cpio rsync \
+            gcc-aarch64-linux-gnu zip unzip
+
+      - name: Fetch clang-r530567
+        run: |
+          mkdir -p toolchain
+          git clone --depth=1 -b llvm-r530567 \
+            https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86 \
+            toolchain/clang
+
+      - name: Patch kbuild and enable RTL8822B
+        working-directory: kernel
+        run: |
+          sed -i 's|src[[:space:]]*:=[[:space:]]*$(srctree)PHONY += $(O)/include/config/auto.conf|src := $(srctree)|' Makefile
+          sed -i 's|include kali-nethunter-kernel/out/include/config/auto.conf|include include/config/auto.conf|' Makefile
+          sed -i '/CONFIG_RTL8814A = y/a CONFIG_RTL8822B = y' drivers/net/wireless/realtek/rtl8812au/Makefile
+          sed -i 's|obj-$(CONFIG_88XXAU)[[:space:]]*+= rtl8812au/|obj-y += rtl8812au/|' drivers/net/wireless/realtek/Makefile
+          sed -i '/0x2357, 0x0115/s/\.driver_info = RTL8812/\.driver_info = RTL8822B/' drivers/net/wireless/realtek/rtl8812au/os_dep/linux/usb_intf.c
+          grep -n -E 'CONFIG_RTL8822B|0x2357, 0x0115|obj-y.*rtl8812au' \
+            drivers/net/wireless/realtek/rtl8812au/Makefile \
+            drivers/net/wireless/realtek/rtl8812au/os_dep/linux/usb_intf.c \
+            drivers/net/wireless/realtek/Makefile
+
+      - name: Prepare exact running-kernel config
+        working-directory: kernel
+        run: |
+          export PATH="${{ github.workspace }}/toolchain/clang/clang-r530567/bin:$PATH"
+          chmod +x scripts/config
+          ./scripts/config --set-val LITTLE_CPU_MASK 15
+          ./scripts/config --set-val BIG_CPU_MASK 112
+          ./scripts/config --set-val PRIME_CPU_MASK 128
+          ./scripts/config --enable USB
+          ./scripts/config --enable WLAN
+          ./scripts/config --enable CFG80211
+          make ARCH=arm64 CC=clang CROSS_COMPILE=aarch64-linux-gnu- olddefconfig
+          make ARCH=arm64 CC=clang CROSS_COMPILE=aarch64-linux-gnu- kernelrelease
+
+      - name: Build kernel image with built-in RTL8822BU support
+        working-directory: kernel
+        run: |
+          export PATH="${{ github.workspace }}/toolchain/clang/clang-r530567/bin:$PATH"
+          make -j"$(nproc)" ARCH=arm64 CC=clang LD=ld.lld \
+            AR=llvm-ar NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump \
+            STRIP=llvm-strip CROSS_COMPILE=aarch64-linux-gnu- Image.gz
+
+      - name: Package Apollo AnyKernel ZIP
+        run: |
+          curl -fL \
+            https://github.com/dtrail/nethunter_kernel_xiaomi_sm8250/releases/download/1.1.9c/apollo-N0tHunter_Kernel_20260417.zip \
+            -o base.zip
+          mkdir package
+          unzip -q base.zip -d package
+          cp kernel/arch/arm64/boot/Image.gz package/Image.gz
+          cd package
+          zip -qr ../apollo-N0tHunter-RTL8822BU.zip .
+
+      - name: Upload flashable kernel
+        uses: actions/upload-artifact@v4
+        with:
+          name: apollo-N0tHunter-RTL8822BU
+          path: apollo-N0tHunter-RTL8822BU.zip
+          if-no-files-found: error
+
