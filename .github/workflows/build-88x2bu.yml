@@ -55,7 +55,7 @@ jobs:
           ./scripts/config --set-val BIG_CPU_MASK 112
           ./scripts/config --set-val PRIME_CPU_MASK 128
           make ARCH=arm64 CC=clang olddefconfig
-          make ARCH=arm64 CC=clang modules_prepare
+          make ARCH=arm64 CC=clang V=1 modules_prepare
 
       - name: Build 88x2bu.ko
         run: |
