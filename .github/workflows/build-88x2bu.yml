@@ -42,9 +42,9 @@ jobs:
           export CLANG_TRIPLE=aarch64-linux-gnu-
           export CROSS_COMPILE=aarch64-linux-gnu-
           chmod +x scripts/config
-          ./scripts/config --set-str LITTLE_CPU_MASK "0-3"
-          ./scripts/config --set-str BIG_CPU_MASK "4-6"
-          ./scripts/config --set-str PRIME_CPU_MASK "7"
+          ./scripts/config --set-val LITTLE_CPU_MASK 15
+          ./scripts/config --set-val BIG_CPU_MASK 112
+          ./scripts/config --set-val PRIME_CPU_MASK 128
           make ARCH=arm64 CC=clang olddefconfig
           make ARCH=arm64 CC=clang modules_prepare
 
