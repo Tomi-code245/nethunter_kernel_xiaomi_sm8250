@@ -54,6 +54,7 @@ jobs:
           ./scripts/config --enable USB
           ./scripts/config --enable WLAN
           ./scripts/config --enable CFG80211
+          ./scripts/config --disable SECURITY_SMACK
           make ARCH=arm64 CC=clang CROSS_COMPILE=aarch64-linux-gnu- \
             CROSS_COMPILE_COMPAT=arm-linux-gnueabi- olddefconfig
           make ARCH=arm64 CC=clang CROSS_COMPILE=aarch64-linux-gnu- \
