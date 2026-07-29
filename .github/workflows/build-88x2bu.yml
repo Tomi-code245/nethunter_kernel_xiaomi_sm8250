@@ -33,15 +33,6 @@ jobs:
             https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86 \
             toolchain/clang
 
-      - name: Debug kernel tree structure
-        working-directory: kernel
-        run: |
-          ls -la
-          echo "--- searching for modules_prepare target ---"
-          grep -rn "modules_prepare" Makefile scripts/Makefile.build 2>/dev/null || echo "NOT FOUND in expected files"
-          echo "--- top of Makefile ---"
-          head -50 Makefile
-
       - name: Prepare kernel tree for module build
         working-directory: kernel
         run: |
@@ -54,8 +45,21 @@ jobs:
           ./scripts/config --set-val LITTLE_CPU_MASK 15
           ./scripts/config --set-val BIG_CPU_MASK 112
           ./scripts/config --set-val PRIME_CPU_MASK 128
+          ./scripts/config --enable MODULES
+          grep -n "^CONFIG_MODULES" .config || echo "CONFIG_MODULES not present after enable attempt"
           make ARCH=arm64 CC=clang olddefconfig
           make ARCH=arm64 CC=clang V=1 modules_prepare
+
+      - name: Diagnose modules_prepare gating (only if previous step failed)
+        if: failure()
+        working-directory: kernel
+        run: |
+          echo "--- CONFIG_MODULES in .config ---"
+          grep -n "^CONFIG_MODULES\|# CONFIG_MODULES" .config
+          echo "--- context around modules_prepare definition ---"
+          grep -n -B 25 "modules_prepare: prepare scripts" Makefile
+          echo "--- MAKECMDGOALS-relevant guards near top of Makefile ---"
+          grep -n "config-targets\|mixed-targets\|dot-config" Makefile | head -30
 
       - name: Build 88x2bu.ko
         run: |
