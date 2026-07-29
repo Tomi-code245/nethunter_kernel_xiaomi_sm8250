@@ -16,8 +16,10 @@ jobs:
 
       - name: Install build dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y bc bison flex libssl-dev libelf-dev \
+          sudo apt-get -o Acquire::Retries=5 -o Acquire::http::Timeout=30 update
+          sudo env DEBIAN_FRONTEND=noninteractive apt-get \
+            -o Acquire::Retries=5 -o Acquire::http::Timeout=30 install -y \
+            bc bison flex libssl-dev libelf-dev \
             build-essential python3 python-is-python3 cpio rsync \
             gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi zip unzip
 
