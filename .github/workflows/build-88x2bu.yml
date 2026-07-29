@@ -1,0 +1,60 @@
+name: Build 88x2bu module
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout kernel source
+        uses: actions/checkout@v4
+        with:
+          ref: staging
+          path: kernel
+
+      - name: Checkout 88x2bu driver source
+        uses: actions/checkout@v4
+        with:
+          repository: kurahaupo/linux-rtl88x2bu
+          path: 88x2bu
+
+      - name: Install build deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bc bison flex libssl-dev libelf-dev \
+            build-essential python3 python-is-python3 cpio rsync gcc-aarch64-linux-gnu
+
+      - name: Fetch clang-r530567 toolchain
+        run: |
+          mkdir -p toolchain
+          git clone --depth=1 -b llvm-r530567 \
+            https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86 \
+            toolchain/clang
+
+      - name: Prepare kernel tree for module build
+        working-directory: kernel
+        run: |
+          export PATH="${{ github.workspace }}/toolchain/clang/clang-r530567/bin:$PATH"
+          export ARCH=arm64
+          export SUBARCH=arm64
+          export CLANG_TRIPLE=aarch64-linux-gnu-
+          export CROSS_COMPILE=aarch64-linux-gnu-
+          make ARCH=arm64 CC=clang olddefconfig
+          make ARCH=arm64 CC=clang modules_prepare
+
+      - name: Build 88x2bu.ko
+        run: |
+          export PATH="${{ github.workspace }}/toolchain/clang/clang-r530567/bin:$PATH"
+          export ARCH=arm64
+          export CROSS_COMPILE=aarch64-linux-gnu-
+          make -C ${{ github.workspace }}/kernel \
+            M=${{ github.workspace }}/88x2bu \
+            CC=clang \
+            modules
+
+      - name: Upload module artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: 88x2bu-module
+          path: 88x2bu/*.ko
