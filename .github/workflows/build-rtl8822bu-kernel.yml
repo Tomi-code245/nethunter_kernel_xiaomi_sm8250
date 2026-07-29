@@ -64,10 +64,12 @@ jobs:
             drivers/net/wireless/realtek/rtl8812au/os_dep/linux/usb_intf.c \
             drivers/net/wireless/realtek/Makefile
 
-      - name: Prepare exact running-kernel config
+      - name: Prepare source-supported Apollo config
         working-directory: kernel
         run: |
           export PATH="${{ github.workspace }}/toolchain/clang/clang-r530567/bin:$PATH"
+          make ARCH=arm64 CC=clang CROSS_COMPILE=aarch64-linux-gnu- \
+            CROSS_COMPILE_COMPAT=arm-linux-gnueabi- nethunter_defconfig_apollo
           chmod +x scripts/config
           ./scripts/config --set-val LITTLE_CPU_MASK 15
           ./scripts/config --set-val BIG_CPU_MASK 112
