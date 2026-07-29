@@ -36,6 +36,8 @@ jobs:
           sed -i '/CONFIG_RTL8814A = y/a CONFIG_RTL8822B = y' drivers/net/wireless/realtek/rtl8812au/Makefile
           sed -i 's|obj-$(CONFIG_88XXAU)[[:space:]]*+= rtl8812au/|obj-y += rtl8812au/|' drivers/net/wireless/realtek/Makefile
           sed -i '/0x2357, 0x0115/s/\.driver_info = RTL8812/\.driver_info = RTL8822B/' drivers/net/wireless/realtek/rtl8812au/os_dep/linux/usb_intf.c
+          sed -i '/^static ssize_t cpuset_write_resmask_assist/i #ifdef CONFIG_CPUSET_ASSIST' kernel/cgroup/cpuset.c
+          sed -i '/^static ssize_t cpuset_write_resmask_wrapper/i #endif' kernel/cgroup/cpuset.c
           grep -n -E 'CONFIG_RTL8822B|0x2357, 0x0115|obj-y.*rtl8812au' \
             drivers/net/wireless/realtek/rtl8812au/Makefile \
             drivers/net/wireless/realtek/rtl8812au/os_dep/linux/usb_intf.c \
