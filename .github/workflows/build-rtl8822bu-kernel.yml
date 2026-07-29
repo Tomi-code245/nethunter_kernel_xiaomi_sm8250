@@ -23,27 +23,12 @@ jobs:
             build-essential python3 python-is-python3 cpio rsync \
             gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi zip unzip
 
-      - name: Restore clang-r530567 cache
-        id: clang-cache
-        uses: actions/cache/restore@v4
-        with:
-          path: toolchain/clang
-          key: clang-r530567-linux-x86
-
       - name: Fetch clang-r530567
-        if: steps.clang-cache.outputs.cache-hit != 'true'
         run: |
           mkdir -p toolchain
           git clone --depth=1 -b llvm-r530567 \
             https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86 \
             toolchain/clang
-
-      - name: Save clang-r530567 cache
-        if: steps.clang-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
-        with:
-          path: toolchain/clang
-          key: clang-r530567-linux-x86
 
       - name: Patch kbuild and enable RTL8822B
         working-directory: kernel
