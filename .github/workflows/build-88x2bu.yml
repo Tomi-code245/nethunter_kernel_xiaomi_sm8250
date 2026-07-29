@@ -33,6 +33,15 @@ jobs:
             https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86 \
             toolchain/clang
 
+      - name: Debug kernel tree structure
+        working-directory: kernel
+        run: |
+          ls -la
+          echo "--- searching for modules_prepare target ---"
+          grep -rn "modules_prepare" Makefile scripts/Makefile.build 2>/dev/null || echo "NOT FOUND in expected files"
+          echo "--- top of Makefile ---"
+          head -50 Makefile
+
       - name: Prepare kernel tree for module build
         working-directory: kernel
         run: |
