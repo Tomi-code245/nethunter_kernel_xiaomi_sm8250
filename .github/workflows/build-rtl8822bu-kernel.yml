@@ -55,6 +55,8 @@ jobs:
           ./scripts/config --enable WLAN
           ./scripts/config --enable CFG80211
           ./scripts/config --disable SECURITY_SMACK
+          ./scripts/config --disable SCHED_WALT
+          ./scripts/config --enable PELT_COMPATIBILITY_LAYER
           make ARCH=arm64 CC=clang CROSS_COMPILE=aarch64-linux-gnu- \
             CROSS_COMPILE_COMPAT=arm-linux-gnueabi- olddefconfig
           make ARCH=arm64 CC=clang CROSS_COMPILE=aarch64-linux-gnu- \
