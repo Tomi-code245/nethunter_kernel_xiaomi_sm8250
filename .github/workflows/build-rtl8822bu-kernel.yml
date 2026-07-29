@@ -23,12 +23,27 @@ jobs:
             build-essential python3 python-is-python3 cpio rsync \
             gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi zip unzip
 
+      - name: Restore clang-r530567 cache
+        id: clang-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: toolchain/clang
+          key: clang-r530567-linux-x86
+
       - name: Fetch clang-r530567
+        if: steps.clang-cache.outputs.cache-hit != 'true'
         run: |
           mkdir -p toolchain
           git clone --depth=1 -b llvm-r530567 \
             https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86 \
             toolchain/clang
+
+      - name: Save clang-r530567 cache
+        if: steps.clang-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: toolchain/clang
+          key: clang-r530567-linux-x86
 
       - name: Patch kbuild and enable RTL8822B
         working-directory: kernel
@@ -40,6 +55,10 @@ jobs:
           sed -i '/0x2357, 0x0115/s/\.driver_info = RTL8812/\.driver_info = RTL8822B/' drivers/net/wireless/realtek/rtl8812au/os_dep/linux/usb_intf.c
           sed -i '/^static ssize_t cpuset_write_resmask_assist/i #ifdef CONFIG_CPUSET_ASSIST' kernel/cgroup/cpuset.c
           sed -i '/^static ssize_t cpuset_write_resmask_wrapper/i #endif' kernel/cgroup/cpuset.c
+          sed -i 's/task_rq(p)->cpu_load\[0\]/task_rq(p)->cfs.avg.load_avg/' include/trace/events/sched.h
+          sed -i 's/\.runnable_load_avg/\.runnable_avg/g' include/trace/events/sched.h
+          sed -i 's/idle_get_state_idx(cpu_rq(cpu))/(idle_get_state(cpu_rq(cpu)) ? 1 : 0)/' include/trace/events/sched.h
+          sed -i 's/cpu_isolated(cpu)/0/' include/trace/events/sched.h
           grep -n -E 'CONFIG_RTL8822B|0x2357, 0x0115|obj-y.*rtl8812au' \
             drivers/net/wireless/realtek/rtl8812au/Makefile \
             drivers/net/wireless/realtek/rtl8812au/os_dep/linux/usb_intf.c \
