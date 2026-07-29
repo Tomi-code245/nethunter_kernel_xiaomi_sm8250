@@ -41,7 +41,11 @@ jobs:
           export SUBARCH=arm64
           export CLANG_TRIPLE=aarch64-linux-gnu-
           export CROSS_COMPILE=aarch64-linux-gnu-
-          yes "" | make ARCH=arm64 CC=clang oldconfig
+          chmod +x scripts/config
+          ./scripts/config --set-str LITTLE_CPU_MASK "0-3"
+          ./scripts/config --set-str BIG_CPU_MASK "4-6"
+          ./scripts/config --set-str PRIME_CPU_MASK "7"
+          make ARCH=arm64 CC=clang olddefconfig
           make ARCH=arm64 CC=clang modules_prepare
 
       - name: Build 88x2bu.ko
