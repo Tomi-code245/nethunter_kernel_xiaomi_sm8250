@@ -19,7 +19,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y bc bison flex libssl-dev libelf-dev \
             build-essential python3 python-is-python3 cpio rsync \
-            gcc-aarch64-linux-gnu zip unzip
+            gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi zip unzip
 
       - name: Fetch clang-r530567
         run: |
@@ -52,8 +52,10 @@ jobs:
           ./scripts/config --enable USB
           ./scripts/config --enable WLAN
           ./scripts/config --enable CFG80211
-          make ARCH=arm64 CC=clang CROSS_COMPILE=aarch64-linux-gnu- olddefconfig
-          make ARCH=arm64 CC=clang CROSS_COMPILE=aarch64-linux-gnu- kernelrelease
+          make ARCH=arm64 CC=clang CROSS_COMPILE=aarch64-linux-gnu- \
+            CROSS_COMPILE_COMPAT=arm-linux-gnueabi- olddefconfig
+          make ARCH=arm64 CC=clang CROSS_COMPILE=aarch64-linux-gnu- \
+            CROSS_COMPILE_COMPAT=arm-linux-gnueabi- kernelrelease
 
       - name: Build kernel image with built-in RTL8822BU support
         working-directory: kernel
@@ -61,7 +63,8 @@ jobs:
           export PATH="${{ github.workspace }}/toolchain/clang/clang-r530567/bin:$PATH"
           make -j"$(nproc)" ARCH=arm64 CC=clang LD=ld.lld \
             AR=llvm-ar NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump \
-            STRIP=llvm-strip CROSS_COMPILE=aarch64-linux-gnu- Image.gz
+            STRIP=llvm-strip CROSS_COMPILE=aarch64-linux-gnu- \
+            CROSS_COMPILE_COMPAT=arm-linux-gnueabi- Image.gz
 
       - name: Package Apollo AnyKernel ZIP
         run: |
@@ -80,4 +83,3 @@ jobs:
           name: apollo-N0tHunter-RTL8822BU
           path: apollo-N0tHunter-RTL8822BU.zip
           if-no-files-found: error
-
